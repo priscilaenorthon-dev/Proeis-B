@@ -1,0 +1,1006 @@
+{
+  "convenios": [
+    {
+      "value": "1279",
+      "label": "01 BPM - RAS"
+    },
+    {
+      "value": "156",
+      "label": "01 CIPM - RAS"
+    },
+    {
+      "value": "164",
+      "label": "01 CPA - RAS"
+    },
+    {
+      "value": "139",
+      "label": "01 DPJM - RAS"
+    },
+    {
+      "value": "106",
+      "label": "01 UPP 2 BPM SANTA MARTA - RAS"
+    },
+    {
+      "value": "130",
+      "label": "01 UPP 22 BPM ADEUS BAIANA - RAS"
+    },
+    {
+      "value": "30",
+      "label": "02 BPM - RAS"
+    },
+    {
+      "value": "1250",
+      "label": "02 CIPM - RAS"
+    },
+    {
+      "value": "172",
+      "label": "02 CPA - RAS"
+    },
+    {
+      "value": "141",
+      "label": "02 DPJM - RAS"
+    },
+    {
+      "value": "128",
+      "label": "02 UPP / 5 BPM (PROVIDENCIA) - RAS"
+    },
+    {
+      "value": "55",
+      "label": "03 BPM - RAS"
+    },
+    {
+      "value": "163",
+      "label": "03 CPA - RAS"
+    },
+    {
+      "value": "144",
+      "label": "03 DPJM - RAS"
+    },
+    {
+      "value": "142",
+      "label": "03 UPP / 19 BPM (PAVAO) - RAS"
+    },
+    {
+      "value": "80",
+      "label": "03 UPP 19 BPM TABAJARAS - RAS"
+    },
+    {
+      "value": "127",
+      "label": "03 UPP 5 BPM PRAZERES ESCONDIDINHO - RAS"
+    },
+    {
+      "value": "47",
+      "label": "04 BPM - RAS"
+    },
+    {
+      "value": "165",
+      "label": "04 CPA - RAS"
+    },
+    {
+      "value": "148",
+      "label": "04 DPJM - RAS"
+    },
+    {
+      "value": "134",
+      "label": "04 UPP / 19 BPM (BABILONIA) - RAS"
+    },
+    {
+      "value": "44",
+      "label": "05 BPM - RAS"
+    },
+    {
+      "value": "166",
+      "label": "05 CPA - RAS"
+    },
+    {
+      "value": "154",
+      "label": "05 DPJM - RAS"
+    },
+    {
+      "value": "113",
+      "label": "05 UPP / 23 BPM (ROCINHA) - RAS"
+    },
+    {
+      "value": "34",
+      "label": "06 BPM - RAS"
+    },
+    {
+      "value": "167",
+      "label": "06 CPA - RAS"
+    },
+    {
+      "value": "158",
+      "label": "06 DPJM - RAS"
+    },
+    {
+      "value": "112",
+      "label": "06 UPP / 03 BPM (SAO JOAO) - RAS"
+    },
+    {
+      "value": "46",
+      "label": "07 BPM - RAS"
+    },
+    {
+      "value": "168",
+      "label": "07 CPA - RAS"
+    },
+    {
+      "value": "133",
+      "label": "07 UPP / 03 BPM (JACAREZINHO) - RAS"
+    },
+    {
+      "value": "54",
+      "label": "08 BPM - RAS"
+    },
+    {
+      "value": "91",
+      "label": "08 UPP / 03 BPM (LINS) - RAS"
+    },
+    {
+      "value": "50",
+      "label": "09 BPM - RAS"
+    },
+    {
+      "value": "132",
+      "label": "09 UPP / 04 BPM (TURANO) - RAS"
+    },
+    {
+      "value": "53",
+      "label": "10 BPM - RAS"
+    },
+    {
+      "value": "137",
+      "label": "10 UPP / 06 BPM (BOREL) - RAS"
+    },
+    {
+      "value": "39",
+      "label": "11 BPM - RAS"
+    },
+    {
+      "value": "122",
+      "label": "11 UPP / 06 BPM (MACACOS) - RAS"
+    },
+    {
+      "value": "73",
+      "label": "12 BPM - RAS"
+    },
+    {
+      "value": "93",
+      "label": "12 UPP / 16 BPM (COMPLEXO DO ALEMAO) - RAS"
+    },
+    {
+      "value": "100",
+      "label": "13 UPP / 16 BPM (COMPLEXO DA PENHA) - RAS"
+    },
+    {
+      "value": "51",
+      "label": "14 BPM - RAS"
+    },
+    {
+      "value": "35",
+      "label": "15 BPM - RAS"
+    },
+    {
+      "value": "129",
+      "label": "15 UPP / 22 BPM (MANGUINHOS) - RAS"
+    },
+    {
+      "value": "43",
+      "label": "16 BPM - RAS"
+    },
+    {
+      "value": "92",
+      "label": "16 UPP / 04 BPM (MANGUEIRA) - RAS"
+    },
+    {
+      "value": "37",
+      "label": "17 BPM - RAS"
+    },
+    {
+      "value": "58",
+      "label": "18 BPM - RAS"
+    },
+    {
+      "value": "40",
+      "label": "19 BPM - RAS"
+    },
+    {
+      "value": "64",
+      "label": "20 BPM - RAS"
+    },
+    {
+      "value": "56",
+      "label": "21 BPM - RAS"
+    },
+    {
+      "value": "59",
+      "label": "22 BPM - RAS"
+    },
+    {
+      "value": "36",
+      "label": "23 BPM - RAS"
+    },
+    {
+      "value": "65",
+      "label": "24 BPM - RAS"
+    },
+    {
+      "value": "69",
+      "label": "25 BPM - RAS"
+    },
+    {
+      "value": "41",
+      "label": "26 BPM - RAS"
+    },
+    {
+      "value": "32",
+      "label": "27 BPM - RAS"
+    },
+    {
+      "value": "71",
+      "label": "28 BPM - RAS"
+    },
+    {
+      "value": "45",
+      "label": "29 BPM - RAS"
+    },
+    {
+      "value": "60",
+      "label": "30 BPM - RAS"
+    },
+    {
+      "value": "72",
+      "label": "31 BPM - RAS"
+    },
+    {
+      "value": "38",
+      "label": "32 BPM - RAS"
+    },
+    {
+      "value": "70",
+      "label": "33 BPM - RAS"
+    },
+    {
+      "value": "31",
+      "label": "34 BPM - RAS"
+    },
+    {
+      "value": "62",
+      "label": "35 BPM - RAS"
+    },
+    {
+      "value": "74",
+      "label": "36 BPM - RAS"
+    },
+    {
+      "value": "67",
+      "label": "37 BPM - RAS"
+    },
+    {
+      "value": "66",
+      "label": "38 BPM - RAS"
+    },
+    {
+      "value": "33",
+      "label": "39 BPM - RAS"
+    },
+    {
+      "value": "42",
+      "label": "40 BPM - RAS"
+    },
+    {
+      "value": "61",
+      "label": "41 BPM - RAS"
+    },
+    {
+      "value": "1282",
+      "label": "42 BPM - RAS"
+    },
+    {
+      "value": "187",
+      "label": "7 DPJM - RAS"
+    },
+    {
+      "value": "180",
+      "label": "8 DPJM"
+    },
+    {
+      "value": "1274",
+      "label": "AGUAS DE JUTURNAIBA"
+    },
+    {
+      "value": "1275",
+      "label": "AGUAS DE NITEROI"
+    },
+    {
+      "value": "1272",
+      "label": "AGUAS DO BRASIL FAB"
+    },
+    {
+      "value": "1273",
+      "label": "AGUAS DO PARAIBA"
+    },
+    {
+      "value": "1268",
+      "label": "AGUAS DO RIO 1 (Rio e Sao Goncalo)"
+    },
+    {
+      "value": "1269",
+      "label": "AGUAS DO RIO 4 (Baixada e Penha)"
+    },
+    {
+      "value": "204",
+      "label": "AJUDANCIA GERAL - RAS"
+    },
+    {
+      "value": "1267",
+      "label": "ALERJ"
+    },
+    {
+      "value": "104",
+      "label": "APM - RAS"
+    },
+    {
+      "value": "79",
+      "label": "BAC - RAS"
+    },
+    {
+      "value": "86",
+      "label": "BEPE"
+    },
+    {
+      "value": "75",
+      "label": "BOPE - RAS"
+    },
+    {
+      "value": "76",
+      "label": "BPCHQ - RAS"
+    },
+    {
+      "value": "57",
+      "label": "BPTUR - RAS"
+    },
+    {
+      "value": "68",
+      "label": "BPVE - RAS"
+    },
+    {
+      "value": "1271",
+      "label": "BTM - RAS"
+    },
+    {
+      "value": "223",
+      "label": "CAES"
+    },
+    {
+      "value": "175",
+      "label": "CCOMSOC - RAS"
+    },
+    {
+      "value": "222",
+      "label": "CCPMERJ - MUSEU"
+    },
+    {
+      "value": "201",
+      "label": "CCR VIA LAGOS"
+    },
+    {
+      "value": "135",
+      "label": "CCRIM - RAS"
+    },
+    {
+      "value": "102",
+      "label": "CEADPM - RAS"
+    },
+    {
+      "value": "243",
+      "label": "CEASA"
+    },
+    {
+      "value": "179",
+      "label": "CECOPOM - RAS"
+    },
+    {
+      "value": "1",
+      "label": "CEDAE"
+    },
+    {
+      "value": "108",
+      "label": "CEFD - RAS"
+    },
+    {
+      "value": "99",
+      "label": "CFAP - RAS"
+    },
+    {
+      "value": "181",
+      "label": "CFAP/CCPP"
+    },
+    {
+      "value": "110",
+      "label": "CFRPM - RAS"
+    },
+    {
+      "value": "160",
+      "label": "CGPM - RAS"
+    },
+    {
+      "value": "109",
+      "label": "CIEAT - RAS"
+    },
+    {
+      "value": "231",
+      "label": "CIESPP"
+    },
+    {
+      "value": "115",
+      "label": "CIPM-MUS - RAS"
+    },
+    {
+      "value": "82",
+      "label": "COE - RAS"
+    },
+    {
+      "value": "1255",
+      "label": "CONCESSIONARIA AEROPORTO RIO DE JANEIRO S.A"
+    },
+    {
+      "value": "228",
+      "label": "CONTROLADORIA - PMERJ"
+    },
+    {
+      "value": "1270",
+      "label": "CONTROLADORIA GERAL DO ESTADO DO RIO DE JANEIRO"
+    },
+    {
+      "value": "85",
+      "label": "CPAM - RAS"
+    },
+    {
+      "value": "81",
+      "label": "CPE - RAS"
+    },
+    {
+      "value": "218",
+      "label": "CPMERJ CAMPO GRANDE"
+    },
+    {
+      "value": "220",
+      "label": "CPMERJ DUQUE DE CAXIAS"
+    },
+    {
+      "value": "217",
+      "label": "CPMERJ NITEROI"
+    },
+    {
+      "value": "84",
+      "label": "CPP - RAS"
+    },
+    {
+      "value": "21",
+      "label": "CPROEIS"
+    },
+    {
+      "value": "63",
+      "label": "CPRV - RAS"
+    },
+    {
+      "value": "63",
+      "label": "CPTRAN - RAS"
+    },
+    {
+      "value": "239",
+      "label": "CPTRANS"
+    },
+    {
+      "value": "226",
+      "label": "DABST - RAS"
+    },
+    {
+      "value": "184",
+      "label": "DAS RAS"
+    },
+    {
+      "value": "232",
+      "label": "DCMUN"
+    },
+    {
+      "value": "152",
+      "label": "DCP - RAS"
+    },
+    {
+      "value": "235",
+      "label": "DEA - RAS"
+    },
+    {
+      "value": "240",
+      "label": "DEFENSORIA PUBLICA DO ESTADO DO RIO DE JANEIRO"
+    },
+    {
+      "value": "153",
+      "label": "DF - RAS"
+    },
+    {
+      "value": "155",
+      "label": "DGAF - RAS"
+    },
+    {
+      "value": "143",
+      "label": "DGAL"
+    },
+    {
+      "value": "150",
+      "label": "DGEI - RAS"
+    },
+    {
+      "value": "171",
+      "label": "DGO - RAS"
+    },
+    {
+      "value": "183",
+      "label": "DGP RAS"
+    },
+    {
+      "value": "21",
+      "label": "DGPROG - RAS"
+    },
+    {
+      "value": "203",
+      "label": "DGS"
+    },
+    {
+      "value": "193",
+      "label": "DGTIC - RAS"
+    },
+    {
+      "value": "178",
+      "label": "DIRETORIA DE TRANSPORTES"
+    },
+    {
+      "value": "229",
+      "label": "DLP - RAS"
+    },
+    {
+      "value": "242",
+      "label": "DMP - RAS"
+    },
+    {
+      "value": "157",
+      "label": "DMSA"
+    },
+    {
+      "value": "174",
+      "label": "DOR - RAS"
+    },
+    {
+      "value": "182",
+      "label": "DPA RAS"
+    },
+    {
+      "value": "227",
+      "label": "DPAT - RAS"
+    },
+    {
+      "value": "176",
+      "label": "DPPMERJ - RAS"
+    },
+    {
+      "value": "151",
+      "label": "DRSP - RAS"
+    },
+    {
+      "value": "224",
+      "label": "DVP"
+    },
+    {
+      "value": "146",
+      "label": "EMG - RAS"
+    },
+    {
+      "value": "116",
+      "label": "ESPM - RAS"
+    },
+    {
+      "value": "1248",
+      "label": "FAZ. MARAMBAIA - RAS"
+    },
+    {
+      "value": "78",
+      "label": "GAM - RAS"
+    },
+    {
+      "value": "149",
+      "label": "GCG - RAS"
+    },
+    {
+      "value": "107",
+      "label": "GESAR - RAS"
+    },
+    {
+      "value": "191",
+      "label": "GPFER"
+    },
+    {
+      "value": "101",
+      "label": "HCPM - RAS"
+    },
+    {
+      "value": "97",
+      "label": "HPM / NIT - RAS"
+    },
+    {
+      "value": "1264",
+      "label": "IGUA"
+    },
+    {
+      "value": "1249",
+      "label": "LEI SECA"
+    },
+    {
+      "value": "3",
+      "label": "LIGHT"
+    },
+    {
+      "value": "13",
+      "label": "LINHA AMARELA S/A"
+    },
+    {
+      "value": "194",
+      "label": "METRORIO"
+    },
+    {
+      "value": "1280",
+      "label": "MINISTERIO PUBLICO DO ESTADO DO RIO DE JANEIRO"
+    },
+    {
+      "value": "1252",
+      "label": "MUNICIPIO DE ARARUAMA"
+    },
+    {
+      "value": "221",
+      "label": "MUNICIPIO DE ARRAIAL DO CABO"
+    },
+    {
+      "value": "1277",
+      "label": "MUNICIPIO DE BELFORD ROXO"
+    },
+    {
+      "value": "244",
+      "label": "MUNICIPIO DE DUQUE DE CAXIAS"
+    },
+    {
+      "value": "1260",
+      "label": "MUNICIPIO DE GUAPIMIRIM"
+    },
+    {
+      "value": "1258",
+      "label": "MUNICIPIO DE IGUABA GRANDE"
+    },
+    {
+      "value": "1261",
+      "label": "MUNICIPIO DE MENDES"
+    },
+    {
+      "value": "18",
+      "label": "MUNICIPIO DE NITEROI"
+    },
+    {
+      "value": "215",
+      "label": "MUNICIPIO DE PARACAMBI"
+    },
+    {
+      "value": "1259",
+      "label": "MUNICIPIO DE PAULO DE FRONTIN"
+    },
+    {
+      "value": "1262",
+      "label": "MUNICIPIO DE PINHEIRAL"
+    },
+    {
+      "value": "211",
+      "label": "MUNICIPIO DE SAO JOAO DA BARRA"
+    },
+    {
+      "value": "238",
+      "label": "MUNICIPIO DE VOLTA REDONDA"
+    },
+    {
+      "value": "118",
+      "label": "OCPM - RAS"
+    },
+    {
+      "value": "1263",
+      "label": "ODPM I - RAS"
+    },
+    {
+      "value": "117",
+      "label": "PPM / CASCADURA - RAS"
+    },
+    {
+      "value": "98",
+      "label": "PPM / OLARIA - RAS"
+    },
+    {
+      "value": "124",
+      "label": "PPM / SJM - RAS"
+    },
+    {
+      "value": "169",
+      "label": "PPM/CAMPOS - RAS"
+    },
+    {
+      "value": "205",
+      "label": "PREFEITURA ANGRA DOS REIS"
+    },
+    {
+      "value": "190",
+      "label": "PREFEITURA DA CIDADE DO RIO DE JANEIRO II"
+    },
+    {
+      "value": "207",
+      "label": "PREFEITURA DE BUZIOS"
+    },
+    {
+      "value": "1257",
+      "label": "PREFEITURA DE CABO FRIO"
+    },
+    {
+      "value": "2",
+      "label": "PREFEITURA DE CASIMIRO DE ABREU"
+    },
+    {
+      "value": "248",
+      "label": "PREFEITURA DE CORDEIRO"
+    },
+    {
+      "value": "27",
+      "label": "PREFEITURA DE ITAGUAI"
+    },
+    {
+      "value": "8",
+      "label": "PREFEITURA DE MACAE"
+    },
+    {
+      "value": "206",
+      "label": "PREFEITURA DE MARICA"
+    },
+    {
+      "value": "1256",
+      "label": "PREFEITURA DE NILOPOLIS"
+    },
+    {
+      "value": "4",
+      "label": "PREFEITURA DE NOVA FRIBURGO"
+    },
+    {
+      "value": "214",
+      "label": "PREFEITURA DE NOVA IGUACU"
+    },
+    {
+      "value": "1278",
+      "label": "PREFEITURA DE PIRAI"
+    },
+    {
+      "value": "10",
+      "label": "PREFEITURA DE QUEIMADOS"
+    },
+    {
+      "value": "245",
+      "label": "PREFEITURA DE QUISSAMA"
+    },
+    {
+      "value": "233",
+      "label": "PREFEITURA DE RIO BONITO"
+    },
+    {
+      "value": "12",
+      "label": "PREFEITURA DE RIO DAS OSTRAS"
+    },
+    {
+      "value": "212",
+      "label": "PREFEITURA DE SAQUAREMA"
+    },
+    {
+      "value": "170",
+      "label": "RECOM"
+    },
+    {
+      "value": "1276",
+      "label": "RIO + SANEAMENTO"
+    },
+    {
+      "value": "88",
+      "label": "RPMONT - RAS"
+    },
+    {
+      "value": "246",
+      "label": "SAO JOAO DE MERITI"
+    },
+    {
+      "value": "198",
+      "label": "SEGURANCA PRESENTE"
+    },
+    {
+      "value": "236",
+      "label": "SSCC - RAS"
+    },
+    {
+      "value": "161",
+      "label": "SSI - RAS"
+    },
+    {
+      "value": "22",
+      "label": "SUPERVIA"
+    },
+    {
+      "value": "29",
+      "label": "UNIVERSIDADE DO ESTADO DO NORTE FLUMINENSE"
+    },
+    {
+      "value": "159",
+      "label": "UPPMERJ - RAS"
+    },
+    {
+      "value": "216",
+      "label": "VIA RIO"
+    }
+  ],
+  "cpas": [
+    {
+      "value": "27",
+      "label": "10o BPM - 5o CPA"
+    },
+    {
+      "value": "35",
+      "label": "11o BPM - 7o CPA"
+    },
+    {
+      "value": "24",
+      "label": "12o BPM - 4o CPA"
+    },
+    {
+      "value": "11",
+      "label": "14o BPM - 2o CPA"
+    },
+    {
+      "value": "17",
+      "label": "15o BPM - 3o CPA"
+    },
+    {
+      "value": "6",
+      "label": "16o BPM - 1o CPA"
+    },
+    {
+      "value": "7",
+      "label": "17o BPM - 1o CPA"
+    },
+    {
+      "value": "12",
+      "label": "18o BPM - 2o CPA"
+    },
+    {
+      "value": "8",
+      "label": "19o BPM - 1o CPA"
+    },
+    {
+      "value": "1",
+      "label": "2o BPM - 1o CPA"
+    },
+    {
+      "value": "18",
+      "label": "20o BPM - 3o CPA"
+    },
+    {
+      "value": "19",
+      "label": "21o BPM - 3o CPA"
+    },
+    {
+      "value": "39",
+      "label": "22o BPM - 1o CPA"
+    },
+    {
+      "value": "9",
+      "label": "23o BPM - 1o CPA"
+    },
+    {
+      "value": "20",
+      "label": "24o BPM - 3o CPA"
+    },
+    {
+      "value": "25",
+      "label": "25o BPM - 4o CPA"
+    },
+    {
+      "value": "36",
+      "label": "26o BPM - 7o CPA"
+    },
+    {
+      "value": "13",
+      "label": "27o BPM - 2o CPA"
+    },
+    {
+      "value": "28",
+      "label": "28o BPM - 5o CPA"
+    },
+    {
+      "value": "32",
+      "label": "29o BPM - 6o CPA"
+    },
+    {
+      "value": "2",
+      "label": "3o BPM - 1o CPA"
+    },
+    {
+      "value": "37",
+      "label": "30o BPM - 7o CPA"
+    },
+    {
+      "value": "14",
+      "label": "31o BPM - 2o CPA"
+    },
+    {
+      "value": "33",
+      "label": "32o BPM - 6o CPA"
+    },
+    {
+      "value": "29",
+      "label": "33o BPM - 5o CPA"
+    },
+    {
+      "value": "21",
+      "label": "34o BPM - 3o CPA"
+    },
+    {
+      "value": "26",
+      "label": "35o BPM - 4o CPA"
+    },
+    {
+      "value": "34",
+      "label": "36o BPM - 6o CPA"
+    },
+    {
+      "value": "30",
+      "label": "37o BPM - 5o CPA"
+    },
+    {
+      "value": "38",
+      "label": "38o BPM - 7o CPA"
+    },
+    {
+      "value": "22",
+      "label": "39o BPM - 3o CPA"
+    },
+    {
+      "value": "3",
+      "label": "4o BPM - 1o CPA"
+    },
+    {
+      "value": "15",
+      "label": "40o BPM - 2o CPA"
+    },
+    {
+      "value": "16",
+      "label": "41o BPM - 2o CPA"
+    },
+    {
+      "value": "4",
+      "label": "5o BPM - 1o CPA"
+    },
+    {
+      "value": "5",
+      "label": "6o BPM - 1o CPA"
+    },
+    {
+      "value": "23",
+      "label": "7o BPM - 4o CPA"
+    },
+    {
+      "value": "31",
+      "label": "8o BPM - 6o CPA"
+    },
+    {
+      "value": "10",
+      "label": "9o BPM - 2o CPA"
+    }
+  ]
+}

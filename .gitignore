@@ -1,0 +1,6 @@
+.env
+logs/
+debug_html/
+__pycache__/
+*.pyc
+config/local_settings.json
