@@ -1,5 +1,6 @@
 import argparse
 import base64
+import json
 import os
 import re
 import sys
@@ -13,6 +14,13 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+
+try:
+    import truststore
+
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 
 
 try:
@@ -80,6 +88,29 @@ def norm(value: str | None) -> str:
     value = unicodedata.normalize("NFKD", value)
     value = "".join(char for char in value if not unicodedata.combining(char))
     return re.sub(r"\s+", " ", value.lower()).strip()
+
+
+def normalize_captcha_answer(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", value or "").upper()
+
+
+def is_valid_captcha_answer(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Z0-9]{6}", normalize_captcha_answer(value)))
+
+
+def coerce_scan_rounds(value: int) -> int:
+    return max(1, int(value))
+
+
+def display_date_for_log(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+    return normalize_date_for_site(value)
+
+
+def emit_vaga(label: str, data_evento: str = "", acao: str = "Visualizacao") -> None:
+    print("[VAGA] " + json.dumps({"data": display_date_for_log(data_evento), "acao": acao, "label": label}, ensure_ascii=False))
 
 
 class ProeisHTTP:
@@ -221,7 +252,22 @@ class ProeisHTTP:
         return base64.b64decode(match.group(1))
 
     def solve_captcha(self, image: bytes) -> str:
+        attempts = int(os.getenv("TWOCAPTCHA_INVALID_RETRIES", "2")) + 1
+        last_error = ""
+        for attempt in range(1, attempts + 1):
+            try:
+                return self.solve_captcha_once(image)
+            except AutomationError as exc:
+                last_error = str(exc)
+                if "resposta invalida" not in last_error or attempt == attempts:
+                    raise
+                print(f"2captcha retornou resposta fora do padrao; reenviando captcha ({attempt}/{attempts}).")
+        raise AutomationError(last_error or "2captcha nao retornou uma resposta valida.")
+
+    def solve_captcha_once(self, image: bytes) -> str:
         print("Enviando captcha para 2captcha...")
+        submit_timeout = int(os.getenv("TWOCAPTCHA_SUBMIT_TIMEOUT", "45"))
+        result_timeout = int(os.getenv("TWOCAPTCHA_RESULT_TIMEOUT", "30"))
         response = requests.post(
             "https://2captcha.com/in.php",
             data={
@@ -234,7 +280,7 @@ class ProeisHTTP:
                 "min_len": 6,
                 "max_len": 6,
             },
-            timeout=40,
+            timeout=submit_timeout,
         )
         response.raise_for_status()
         data = response.json()
@@ -242,26 +288,33 @@ class ProeisHTTP:
             raise AutomationError(f"2captcha recusou envio: {data}")
         captcha_id = data["request"]
         self.last_captcha_id = captcha_id
-        for _ in range(30):
-            time.sleep(3)
+        initial_wait = float(os.getenv("TWOCAPTCHA_INITIAL_WAIT", "5"))
+        poll_interval = float(os.getenv("TWOCAPTCHA_POLL_INTERVAL", "1.5"))
+        max_wait = float(os.getenv("TWOCAPTCHA_MAX_WAIT", "75"))
+        deadline = time.monotonic() + max_wait
+        time.sleep(initial_wait)
+        while time.monotonic() < deadline:
             result = requests.get(
                 "https://2captcha.com/res.php",
                 params={"key": self.captcha_key, "action": "get", "id": captcha_id, "json": 1},
-                timeout=30,
+                timeout=result_timeout,
             )
             result.raise_for_status()
             solved = result.json()
             if solved.get("status") == 1:
-                text = self.normalize_captcha_answer(solved["request"])
+                text = normalize_captcha_answer(solved["request"])
+                if not is_valid_captcha_answer(text):
+                    self.report_bad_captcha()
+                    raise AutomationError(f"2captcha retornou resposta invalida para captcha de 6 caracteres: {text or solved.get('request')}")
                 print(f"Captcha resolvido: {text}")
                 return text
             if solved.get("request") != "CAPCHA_NOT_READY":
                 raise AutomationError(f"2captcha retornou erro: {solved}")
+            time.sleep(poll_interval)
         raise AutomationError("2captcha nao respondeu em tempo util.")
 
     def normalize_captcha_answer(self, value: str) -> str:
-        text = re.sub(r"[^A-Za-z0-9]", "", value or "").upper()
-        return text[:6] if len(text) > 6 else text
+        return normalize_captcha_answer(value)
 
     def report_bad_captcha(self) -> None:
         if not self.last_captcha_id:
@@ -386,7 +439,7 @@ class ProeisHTTP:
             return
         raise AutomationError("Captcha do filtro falhou em todas as tentativas.")
 
-    def fill_filters_first_matching_date(self, convenio: str, cpa: str, prefer: str) -> str:
+    def fill_filters_first_matching_date(self, convenio: str, cpa: str, prefer: str, scan_rounds: int = 1) -> str:
         soup = self.require_soup()
         fields = self.find_fields(soup)
 
@@ -413,8 +466,60 @@ class ProeisHTTP:
         if not dates:
             raise AutomationError("Nenhuma data disponivel no select.")
 
+        scan_rounds = coerce_scan_rounds(scan_rounds)
+        for scan_round in range(1, scan_rounds + 1):
+            if scan_rounds > 1:
+                print(f"Rodada de varredura {scan_round}/{scan_rounds}.")
+            for value, label in dates:
+                print(f"Testando data disponivel: {label}")
+                for attempt in range(1, 7):
+                    payload = self.form_payload(soup)
+                    fields = self.find_fields(soup)
+                    payload[fields["data"]] = value
+                    self.set_field(payload, fields, "cpa", cpa)
+                    self.fill_page_captcha(soup, payload)
+                    self.set_reserva_checkbox(soup, payload, True)
+                    submit = self.find_submit(soup, ("pesquisar", "buscar", "consultar", "filtrar", "listar", "avancar"))
+                    if submit:
+                        payload[submit] = self.input_value(soup, submit)
+                    print("Consultando disponibilidade...")
+                    result_soup = self.post_form(payload)
+                    if "erro ao confirmar imagem" in norm(str(result_soup)):
+                        self.report_bad_captcha()
+                        print(f"Captcha de filtro recusado pelo site; tentando novamente ({attempt}/6).")
+                        soup = result_soup
+                        continue
+                    if self.available_candidates(result_soup, prefer):
+                        print(f"Data com vaga encontrada: {label}")
+                        return label
+                    print(f"Nenhuma vaga do tipo solicitado em {label}.")
+                    self.navigate_to_service_page()
+                    soup = self.require_soup()
+                    payload = self.form_payload(soup)
+                    fields = self.find_fields(soup)
+                    self.set_field(payload, fields, "convenio", convenio)
+                    payload["__EVENTTARGET"] = fields["convenio"]
+                    payload["__EVENTARGUMENT"] = ""
+                    soup = self.post_form(payload)
+                    break
+        raise AutomationError("Nenhuma data disponivel tinha vaga do tipo solicitado.")
+
+    def list_all_available_dates(self, convenio: str, cpa: str) -> int:
+        soup = self.require_soup()
+        fields = self.find_fields(soup)
+
+        payload = self.form_payload(soup)
+        self.set_field(payload, fields, "convenio", convenio)
+        payload["__EVENTTARGET"] = fields["convenio"]
+        payload["__EVENTARGUMENT"] = ""
+        soup = self.post_form(payload)
+
+        dates = self.available_date_options(soup)
+        print(f"[VAGAS] Varredura iniciada: {len(dates)} data(s) disponivel(is).")
+
+        total = 0
         for value, label in dates:
-            print(f"Testando data disponivel: {label}")
+            print(f"Listando data: {label}")
             for attempt in range(1, 7):
                 payload = self.form_payload(soup)
                 fields = self.find_fields(soup)
@@ -432,20 +537,45 @@ class ProeisHTTP:
                     print(f"Captcha de filtro recusado pelo site; tentando novamente ({attempt}/6).")
                     soup = result_soup
                     continue
-                if self.available_candidates(result_soup, prefer):
-                    print(f"Data com vaga encontrada: {label}")
-                    return label
-                print(f"Nenhuma vaga do tipo solicitado em {label}.")
-                self.navigate_to_service_page()
-                soup = self.require_soup()
-                payload = self.form_payload(soup)
-                fields = self.find_fields(soup)
-                self.set_field(payload, fields, "convenio", convenio)
-                payload["__EVENTTARGET"] = fields["convenio"]
-                payload["__EVENTARGUMENT"] = ""
-                soup = self.post_form(payload)
+
+                candidates = self.available_candidates(result_soup, "qualquer")
+                if candidates:
+                    print(f"[VAGAS] {len(candidates)} vaga(s) encontrada(s) em {label}:")
+                    for candidate in candidates:
+                        emit_vaga(candidate.label, data_evento=label, acao="Visualizacao")
+                    total += len(candidates)
+                else:
+                    print(f"Nenhuma vaga encontrada em {label}.")
                 break
-        raise AutomationError("Nenhuma data disponivel tinha vaga do tipo solicitado.")
+
+            self.navigate_to_service_page()
+            soup = self.require_soup()
+            payload = self.form_payload(soup)
+            fields = self.find_fields(soup)
+            self.set_field(payload, fields, "convenio", convenio)
+            payload["__EVENTTARGET"] = fields["convenio"]
+            payload["__EVENTARGUMENT"] = ""
+            soup = self.post_form(payload)
+
+        print(f"[VAGAS] Varredura concluida: {total} vaga(s) encontrada(s) no total.")
+        return total
+
+    def available_date_options(self, soup: BeautifulSoup) -> list[tuple[str, str]]:
+        fields = self.find_fields(soup)
+        date_field = fields.get("data")
+        if not date_field:
+            raise AutomationError("Nao encontrei o campo de data para varredura.")
+        date_select = soup.select_one(f'select[name="{date_field}"]')
+        if not date_select:
+            raise AutomationError("Campo de data nao e um select.")
+        dates = [
+            (option.get("value", ""), option.get_text(" ", strip=True))
+            for option in date_select.select("option")
+            if option.get("value", "") not in {"", "0"} and norm(option.get_text(" ", strip=True)) != "selecione"
+        ]
+        if not dates:
+            raise AutomationError("Nenhuma data disponivel no select.")
+        return dates
 
     def fill_page_captcha(self, soup: BeautifulSoup, payload: dict[str, str]) -> None:
         captcha_field = self.find_captcha_field(soup)
@@ -578,7 +708,7 @@ class ProeisHTTP:
         tag = soup.select_one(f'[name="{name}"]')
         return tag.get("value", "") if tag else ""
 
-    def choose_available(self, prefer: str, dry_run: bool) -> None:
+    def choose_available(self, prefer: str, dry_run: bool, data_evento: str = "") -> None:
         soup = self.require_soup()
         candidates = self.available_candidates(soup, prefer)
         if not candidates:
@@ -586,7 +716,7 @@ class ProeisHTTP:
         chosen = candidates[0]
         print(f"[VAGAS] {min(len(candidates), 10)} vaga(s) encontrada(s):")
         for c in candidates[:10]:
-            print(f"[VAGA] {c.label}")
+            emit_vaga(c.label, data_evento=data_evento, acao="Visualizacao")
         print(f"Escolhida: {chosen.label}")
         if dry_run:
             print("dry_run=true: nao confirmei a marcacao.")
@@ -603,6 +733,7 @@ class ProeisHTTP:
         self,
         prefer: str,
         dry_run: bool,
+        data_evento: str = "",
         nome_evento: str = "",
         hora_evento: str = "",
         turno: str = "",
@@ -618,13 +749,13 @@ class ProeisHTTP:
         if not filtered:
             print(f"[VAGAS] {len(candidates)} opcao(oes) disponivel(is) encontrada(s):")
             for c in candidates[:20]:
-                print(f"[VAGA] {c.label}")
+                emit_vaga(c.label, data_evento=data_evento, acao="Visualizacao")
             raise AutomationError("Nao encontrei a linha exata do evento solicitado.")
         chosen = filtered[0]
         print(f"[VAGAS] {len(filtered)} vaga(s) encontrada(s):")
-        for c in filtered:
-            print(f"[VAGA] {c.label}")
         if dry_run:
+            for c in filtered:
+                emit_vaga(c.label, data_evento=data_evento, acao="Visualizacao")
             print("dry_run=true: nao cliquei em Eu Vou.")
             return False
         if chosen.action == "postback":
@@ -633,7 +764,10 @@ class ProeisHTTP:
             soup = self.post_form(chosen.payload)
         else:
             soup = self.request("GET", chosen.action)
-        return self.confirm_if_needed(soup)
+        success = self.confirm_if_needed(soup)
+        if success:
+            emit_vaga(chosen.label, data_evento=data_evento, acao="Clicado Eu vou")
+        return success
 
     def event_matches(self, label: str, nome_evento: str, hora_evento: str, turno: str, endereco: str) -> bool:
         label_norm = norm(label)
@@ -670,7 +804,7 @@ class ProeisHTTP:
         if prefer in {"nao-reserva", "sem-reserva", "normal"}:
             return "reserva" not in text and re.search(r"\b\d+\s*-\s*curso", text) is not None
         if prefer in {"qualquer", "any", ""}:
-            return "disponivel" in text or "reserva" in text or re.search(r"\b1\b", text) is not None
+            return "disponivel" in text or "reserva" in text or re.search(r"\b\d+\s*-\s*curso", text) is not None
         if prefer == "reserva":
             return "reserva" in text
         return re.search(rf"\b{re.escape(prefer)}\b", text) is not None or f"disponivel {prefer}" in text
@@ -782,7 +916,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--turno", default="")
     parser.add_argument("--endereco", default="")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--list-all-dates", action="store_true", help="Lista vagas de todas as datas disponiveis para o convenio/CPA, sem clicar em Eu Vou.")
     parser.add_argument("--no-debug", action="store_true")
+    parser.add_argument("--scan-rounds", type=int, default=1, help="Quantidade de rodadas de varredura quando a data do evento estiver vazia.")
     parser.add_argument("--wait-until", default="", help="HH:MM:SS — faz login imediatamente e aguarda ate esse horario para marcar.")
     return parser.parse_args()
 
@@ -804,6 +940,11 @@ def main() -> int:
         debug=not args.no_debug,
     )
     client.login_flow()
+
+    if args.list_all_dates:
+        client.navigate_to_service_page()
+        client.list_all_available_dates(args.convenio, args.cpa)
+        return 0
 
     if args.wait_until:
         try:
@@ -830,13 +971,20 @@ def main() -> int:
         print(f"Tentativa de marcacao {index}/{args.quantidade}.")
         client.navigate_to_service_page()
         try:
+            selected_date = args.data_evento
             if args.data_evento:
                 client.fill_filters(args.convenio, args.data_evento, args.cpa)
             else:
-                client.fill_filters_first_matching_date(args.convenio, args.cpa, args.disponivel)
+                selected_date = client.fill_filters_first_matching_date(
+                    args.convenio,
+                    args.cpa,
+                    args.disponivel,
+                    scan_rounds=args.scan_rounds,
+                )
             success = client.choose_target_event(
                 args.disponivel,
                 args.dry_run,
+                data_evento=selected_date,
                 nome_evento=args.nome_evento,
                 hora_evento=args.hora_evento,
                 turno=args.turno,

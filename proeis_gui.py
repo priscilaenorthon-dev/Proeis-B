@@ -4,11 +4,14 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 from tkinter import BooleanVar, IntVar, StringVar, Tk, messagebox
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
+
+from timing_utils import format_elapsed
 
 
 ROOT = Path(__file__).resolve().parent
@@ -22,6 +25,13 @@ DEFAULTS = {
     "disponivel": "reserva",
     "quantidade": 1,
 }
+
+DISPONIVEL_LABELS = {
+    "reserva": "reserva",
+    "nao-reserva": "nao-reserva (Titular)",
+}
+
+DISPONIVEL_VALUES = {label: value for value, label in DISPONIVEL_LABELS.items()}
 
 
 def load_json(path: Path, fallback):
@@ -45,6 +55,47 @@ def save_settings(settings: dict):
     SETTINGS_PATH.write_text(json.dumps(settings, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
 
+def display_disponivel(value: str) -> str:
+    return DISPONIVEL_LABELS.get(value, value)
+
+
+def backend_disponivel(value: str) -> str:
+    return DISPONIVEL_VALUES.get(value, value)
+
+
+def parse_vaga_output(raw: str) -> tuple[str, str, str, str, str, str, str]:
+    data_evento = ""
+    acao = "Visualizacao"
+    label = raw.strip()
+
+    if label.startswith("{"):
+        try:
+            payload = json.loads(label)
+            data_evento = str(payload.get("data", "")).strip()
+            acao = str(payload.get("acao", acao)).strip() or acao
+            label = str(payload.get("label", "")).strip()
+        except json.JSONDecodeError:
+            pass
+
+    clean = re.sub(r"\s*Eu\s+Vou\s*$", "", label, flags=re.IGNORECASE).strip()
+    m = re.match(
+        r"^(.+?)\s+(\d{2}:\d{2}:\d{2})\s+(\d+\s*h)\s+(.+?)\s+(\d+\s*-\s*curso.*|RESERVA.*|DISPONIVEL.*)$",
+        clean,
+        re.IGNORECASE,
+    )
+    if m:
+        nome, hora, turno, endereco, tipo = (
+            m.group(1),
+            m.group(2),
+            m.group(3).strip(),
+            m.group(4),
+            m.group(5),
+        )
+    else:
+        nome, hora, turno, endereco, tipo = clean, "", "", "", ""
+    return data_evento, nome, hora, turno, endereco, tipo, acao
+
+
 class ProeisApp:
     def __init__(self, root: Tk):
         self.root = root
@@ -55,6 +106,8 @@ class ProeisApp:
         self.process: subprocess.Popen | None = None
         self._log_file = None
         self._countdown_active = False
+        self._operation_started_at: float | None = None
+        self._operation_status_prefix = ""
 
         self.convenios, self.cpas = load_options()
         settings = DEFAULTS | load_json(SETTINGS_PATH, {})
@@ -62,7 +115,7 @@ class ProeisApp:
         self.convenio        = StringVar(value=settings.get("convenio",    DEFAULTS["convenio"]))
         self.data_evento     = StringVar(value=settings.get("data_evento", DEFAULTS["data_evento"]))
         self.cpa             = StringVar(value=settings.get("cpa",         DEFAULTS["cpa"]))
-        self.disponivel      = StringVar(value=settings.get("disponivel",  DEFAULTS["disponivel"]))
+        self.disponivel      = StringVar(value=display_disponivel(settings.get("disponivel", DEFAULTS["disponivel"])))
         self.quantidade      = IntVar(value=int(settings.get("quantidade", DEFAULTS["quantidade"])))
         self.agendamento     = BooleanVar(value=False)
         self.data_agendamento = StringVar(value="")
@@ -89,6 +142,7 @@ class ProeisApp:
 
         s.configure("Header.TLabel",  background=bg,        foreground="#0f172a", font=("Segoe UI", 17, "bold"))
         s.configure("Sub.TLabel",     background=bg,        foreground="#64748b", font=("Segoe UI", 10))
+        s.configure("StatusDone.TLabel", background=bg,     foreground="#dc2626", font=("Segoe UI", 10, "bold"))
         s.configure("Field.TLabel",   background=card,      foreground="#374151", font=("Segoe UI", 9,  "bold"))
         s.configure("Hint.TLabel",    background=card,      foreground="#94a3b8", font=("Segoe UI", 8))
         s.configure("TLabel",         background=card,      foreground="#0f172a", font=("Segoe UI", 10))
@@ -180,7 +234,7 @@ class ProeisApp:
         r += 1
         ttk.Combobox(
             form, textvariable=self.disponivel,
-            values=["reserva", "nao-reserva"], width=36, state="readonly",
+            values=list(DISPONIVEL_VALUES), width=36, state="readonly",
         ).grid(row=r, column=0, sticky="ew")
         r += 1
 
@@ -230,9 +284,13 @@ class ProeisApp:
         ttk.Button(btn_frame, text="Marcar", style="Success.TButton", command=self.run_real).grid(
             row=0, column=1, sticky="ew", padx=(5, 0)
         )
+        ttk.Button(form, text="Listar Vagas", style="Neutral.TButton", command=self.run_list_all).grid(
+            row=r, column=0, sticky="ew", pady=(8, 0)
+        )
+        r += 1
         ttk.Label(
             form,
-            text="Testar: lista vagas sem confirmar    Marcar: clica em Eu Vou",
+            text="Testar: usa os filtros atuais    Listar Vagas: varre todas as datas",
             style="Hint.TLabel",
         ).grid(row=r, column=0, sticky="w", pady=(6, 0))
         r += 1
@@ -251,7 +309,8 @@ class ProeisApp:
         right.rowconfigure(1, weight=1)
         right.columnconfigure(0, weight=1)
 
-        ttk.Label(right, textvariable=self.status, style="Sub.TLabel").grid(
+        self.status_label = ttk.Label(right, textvariable=self.status, style="Sub.TLabel")
+        self.status_label.grid(
             row=0, column=0, sticky="w", pady=(0, 6)
         )
 
@@ -264,18 +323,22 @@ class ProeisApp:
         tab_vagas.rowconfigure(0, weight=1)
         tab_vagas.columnconfigure(0, weight=1)
 
-        cols = ("nome", "hora", "turno", "endereco", "tipo")
+        cols = ("data", "nome", "hora", "turno", "endereco", "tipo", "acao")
         self.tree = ttk.Treeview(tab_vagas, columns=cols, show="headings", selectmode="browse")
+        self.tree.heading("data",     text="Data do Evento")
         self.tree.heading("nome",     text="Nome do Evento")
         self.tree.heading("hora",     text="Hora")
         self.tree.heading("turno",    text="Turno")
         self.tree.heading("endereco", text="Endereco")
         self.tree.heading("tipo",     text="Disponivel")
-        self.tree.column("nome",     width=280, stretch=True)
+        self.tree.heading("acao",     text="Acao")
+        self.tree.column("data",     width=102, anchor="center", stretch=False)
+        self.tree.column("nome",     width=240, stretch=True)
         self.tree.column("hora",     width=72,  anchor="center", stretch=False)
         self.tree.column("turno",    width=62,  anchor="center", stretch=False)
-        self.tree.column("endereco", width=200, stretch=True)
-        self.tree.column("tipo",     width=128, anchor="center", stretch=False)
+        self.tree.column("endereco", width=180, stretch=True)
+        self.tree.column("tipo",     width=126, anchor="center", stretch=False)
+        self.tree.column("acao",     width=112, anchor="center", stretch=False)
         self.tree.tag_configure("reserva", foreground="#15803d")
         self.tree.tag_configure("normal",  foreground="#2563eb")
 
@@ -361,7 +424,7 @@ class ProeisApp:
         if total_sec <= 0:
             # Caso raro: processo ja devia ter iniciado no bloco abaixo
             self._countdown_active = False
-            self.start_process(dry_run=False)
+            self.start_process(dry_run=False, scheduled=True)
             return
 
         if total_sec <= self._PRE_LOGIN_SECS:
@@ -373,7 +436,7 @@ class ProeisApp:
                 f"Login antecipado iniciado ({total_sec}s antes do horario).\n"
                 f"O bot vai fazer login agora e aguardar ate {target.strftime('%H:%M:%S')}.\n\n"
             )
-            self.start_process(dry_run=False, wait_until=target)
+            self.start_process(dry_run=False, wait_until=target, scheduled=True)
             return
 
         h, rem = divmod(total_sec, 3600)
@@ -390,7 +453,7 @@ class ProeisApp:
             "convenio":    self.convenio.get().strip(),
             "data_evento": self.data_evento.get().strip(),
             "cpa":         self.cpa.get().strip(),
-            "disponivel":  self.disponivel.get().strip(),
+            "disponivel":  backend_disponivel(self.disponivel.get().strip()),
             "quantidade":  int(self.quantidade.get()),
         }
 
@@ -403,6 +466,9 @@ class ProeisApp:
     def run_test(self):
         self.start_process(dry_run=True)
 
+    def run_list_all(self):
+        self.start_process(dry_run=True, list_all_dates=True)
+
     def run_real(self):
         if self.agendamento.get():
             self._schedule_execution()
@@ -414,7 +480,13 @@ class ProeisApp:
             return
         self.start_process(dry_run=False)
 
-    def start_process(self, dry_run: bool, wait_until: datetime | None = None):
+    def start_process(
+        self,
+        dry_run: bool,
+        wait_until: datetime | None = None,
+        list_all_dates: bool = False,
+        scheduled: bool = False,
+    ):
         if self.process and self.process.poll() is None:
             messagebox.showwarning("Em execucao", "A automacao ja esta rodando.")
             return
@@ -435,10 +507,14 @@ class ProeisApp:
             "--disponivel", settings["disponivel"],
             "--quantidade", str(settings["quantidade"]),
         ]
-        if settings["data_evento"]:
+        if settings["data_evento"] and not list_all_dates:
             args.extend(["--data-evento", settings["data_evento"]])
         if dry_run:
             args.append("--dry-run")
+        if list_all_dates:
+            args.append("--list-all-dates")
+        if scheduled and not settings["data_evento"]:
+            args.extend(["--scan-rounds", "2"])
         if wait_until:
             args.extend(["--wait-until", wait_until.strftime("%H:%M:%S")])
 
@@ -454,21 +530,33 @@ class ProeisApp:
         self.clear_log()
         self.clear_vagas()
         self.notebook.select(1)
+        self.status_label.configure(style="Sub.TLabel")
 
         self.write_log(f"[LOG] Arquivo de log: {log_path}\n\n")
         self.write_log(f"Convenio:    {settings['convenio']}\n")
-        self.write_log(f"Data Evento: {settings['data_evento'] or '(varrer todas)'}\n")
+        self.write_log(f"Data Evento: {'(todas as datas)' if list_all_dates else settings['data_evento'] or '(varrer todas)'}\n")
         self.write_log(f"CPA:         {settings['cpa']}\n")
         self.write_log(f"Tipo:        {settings['disponivel']}\n")
         self.write_log(f"Quantidade:  {settings['quantidade']}\n")
-        self.write_log(f"Modo:        {'Teste (sem confirmar)' if dry_run else 'MARCACAO REAL'}\n\n")
+        mode = "Listar vagas (todas as datas)" if list_all_dates else ("Teste (sem confirmar)" if dry_run else "MARCACAO REAL")
+        self.write_log(f"Modo:        {mode}\n\n")
+        if scheduled and not settings["data_evento"]:
+            self.write_log("Agendamento sem data: varredura em 2 rodadas.\n\n")
 
-        self.status.set("Testando..." if dry_run else "Executando marcacao...")
+        self._operation_started_at = time.perf_counter()
+        start_line = f"Inicio:      {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n\n"
+        self.write_log(start_line)
+        if self._log_file:
+            self._log_file.write(start_line)
+
+        self._operation_status_prefix = "Listando vagas" if list_all_dates else ("Testando" if dry_run else "Executando marcacao")
+        self.status.set(f"{self._operation_status_prefix}... tempo: 0.0s")
         self.process = subprocess.Popen(
             args, cwd=ROOT,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, bufsize=1, env=env,
         )
+        self._tick_operation_timer()
         threading.Thread(target=self._read_output, daemon=True).start()
 
     # ── Output ────────────────────────────────────────────────────────────────
@@ -492,31 +580,46 @@ class ProeisApp:
         code = self.process.wait()
         self.root.after(0, self._finish, code)
 
-    def _add_vaga_row(self, label: str):
-        clean = re.sub(r"\s*Eu\s+Vou\s*$", "", label, flags=re.IGNORECASE).strip()
-        m = re.match(
-            r"^(.+?)\s+(\d{2}:\d{2}:\d{2})\s+(\d+\s*h)\s+(.+?)\s+(\d+\s*-\s*curso.*|RESERVA.*|DISPONIVEL.*)$",
-            clean, re.IGNORECASE,
-        )
-        if m:
-            nome, hora, turno, endereco, tipo = (
-                m.group(1), m.group(2), m.group(3).strip(), m.group(4), m.group(5)
-            )
-        else:
-            nome, hora, turno, endereco, tipo = clean, "", "", "", ""
+    def _tick_operation_timer(self):
+        if self._operation_started_at is None:
+            return
+        if self.process and self.process.poll() is None:
+            elapsed = format_elapsed(time.perf_counter() - self._operation_started_at)
+            self.status.set(f"{self._operation_status_prefix}... tempo: {elapsed}")
+            self.root.after(1000, self._tick_operation_timer)
 
+    def _add_vaga_row(self, label: str):
+        data_evento, nome, hora, turno, endereco, tipo, acao = parse_vaga_output(label)
         tag = "reserva" if "reserva" in tipo.lower() else "normal"
-        self.tree.insert("", "end", values=(nome, hora, turno, endereco, tipo), tags=(tag,))
+        self.tree.insert("", "end", values=(data_evento, nome, hora, turno, endereco, tipo, acao), tags=(tag,))
         self.notebook.select(0)
 
     def _finish(self, code: int):
+        elapsed = None
+        if self._operation_started_at is not None:
+            elapsed = format_elapsed(time.perf_counter() - self._operation_started_at)
+            self._operation_started_at = None
+
         if code == 0:
-            self.status.set("Finalizado com sucesso")
-            self.write_log("\nFinalizado com sucesso.\n")
+            status = "Finalizado com sucesso"
         else:
-            self.status.set(f"Finalizado com erro (codigo {code})")
-            self.write_log(f"\nFinalizado com erro. Codigo: {code}\n")
+            status = f"Finalizado com erro (codigo {code})"
+
+        if elapsed:
+            self.status_label.configure(style="StatusDone.TLabel")
+            self.status.set(f"{status} - tempo: {elapsed}")
+            self.write_log(f"\nTempo total da operacao: {elapsed}\n")
+        else:
+            self.status_label.configure(style="StatusDone.TLabel")
+            self.status.set(status)
+
+        if code == 0:
+            self.write_log("Finalizado com sucesso.\n")
+        else:
+            self.write_log(f"Finalizado com erro. Codigo: {code}\n")
         if self._log_file:
+            if elapsed:
+                self._log_file.write(f"\n[Tempo total da operacao: {elapsed}]\n")
             self._log_file.write(f"\n[Codigo de saida: {code}]\n")
             self._log_file.close()
             self._log_file = None
