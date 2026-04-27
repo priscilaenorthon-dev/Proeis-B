@@ -102,6 +102,10 @@ def coerce_scan_rounds(value: int) -> int:
     return max(1, int(value))
 
 
+def next_scan_date_index(current_index: int, found_candidate: bool) -> int:
+    return current_index if found_candidate else current_index + 1
+
+
 def display_date_for_log(value: str) -> str:
     value = (value or "").strip()
     if not value:
@@ -503,6 +507,75 @@ class ProeisHTTP:
                     soup = self.post_form(payload)
                     break
         raise AutomationError("Nenhuma data disponivel tinha vaga do tipo solicitado.")
+
+    def dates_for_convenio(self, convenio: str) -> list[tuple[str, str]]:
+        soup = self.require_soup()
+        fields = self.find_fields(soup)
+
+        payload = self.form_payload(soup)
+        self.set_field(payload, fields, "convenio", convenio)
+        payload["__EVENTTARGET"] = fields["convenio"]
+        payload["__EVENTARGUMENT"] = ""
+        soup = self.post_form(payload)
+
+        dates = self.available_date_options(soup)
+        if not dates:
+            raise AutomationError("Nenhuma data disponivel no select.")
+        return dates
+
+    def mark_scanning_dates(
+        self,
+        convenio: str,
+        cpa: str,
+        prefer: str,
+        quantidade: int,
+        scan_rounds: int = 1,
+        nome_evento: str = "",
+        hora_evento: str = "",
+        turno: str = "",
+        endereco: str = "",
+    ) -> int:
+        self.navigate_to_service_page()
+        dates = self.dates_for_convenio(convenio)
+        print(f"[VAGAS] Marcacao por varredura iniciada: {len(dates)} data(s) disponivel(is).")
+
+        confirmed = 0
+        scan_rounds = coerce_scan_rounds(scan_rounds)
+        for scan_round in range(1, scan_rounds + 1):
+            if confirmed >= quantidade:
+                break
+            if scan_rounds > 1:
+                print(f"Rodada de varredura {scan_round}/{scan_rounds}.")
+
+            date_index = 0
+            while date_index < len(dates) and confirmed < quantidade:
+                _, label = dates[date_index]
+                print(f"Testando data disponivel: {label}")
+                self.navigate_to_service_page()
+                self.fill_filters(convenio, label, cpa)
+                candidates = self.available_candidates(self.require_soup(), prefer)
+                if not candidates:
+                    print(f"Nenhuma vaga do tipo solicitado em {label}.")
+                    date_index = next_scan_date_index(date_index, found_candidate=False)
+                    continue
+
+                print(f"Tentativa de marcacao {confirmed + 1}/{quantidade}.")
+                success = self.choose_target_event(
+                    prefer,
+                    False,
+                    data_evento=label,
+                    nome_evento=nome_evento,
+                    hora_evento=hora_evento,
+                    turno=turno,
+                    endereco=endereco,
+                )
+                if not success:
+                    raise AutomationError("Clique executado, mas nao encontrei confirmacao de sucesso no retorno do site.")
+                confirmed += 1
+                print(f"Marcacoes confirmadas: {confirmed}/{quantidade}.")
+                date_index = next_scan_date_index(date_index, found_candidate=True)
+
+        return confirmed
 
     def list_all_available_dates(self, convenio: str, cpa: str) -> int:
         soup = self.require_soup()
@@ -965,6 +1038,22 @@ def main() -> int:
                 print(f"  Aguardando... {remaining}s restantes.")
             time.sleep(1)
         print("Horario atingido — iniciando marcacao.")
+
+    if not args.data_evento and not args.dry_run:
+        confirmed = client.mark_scanning_dates(
+            args.convenio,
+            args.cpa,
+            args.disponivel,
+            args.quantidade,
+            scan_rounds=args.scan_rounds,
+            nome_evento=args.nome_evento,
+            hora_evento=args.hora_evento,
+            turno=args.turno,
+            endereco=args.endereco,
+        )
+        if confirmed < args.quantidade:
+            print(f"Sem mais vagas do tipo solicitado. Marcacoes confirmadas: {confirmed}/{args.quantidade}.")
+        return 0
 
     confirmed = 0
     for index in range(1, args.quantidade + 1):
