@@ -436,7 +436,8 @@ class ProeisHTTP:
                     print(f"Data com vaga encontrada: {label}")
                     return label
                 print(f"Nenhuma vaga do tipo solicitado em {label}.")
-                soup = self.request("GET", ASSOCIAR_URL)
+                self.navigate_to_service_page()
+                soup = self.require_soup()
                 payload = self.form_payload(soup)
                 fields = self.find_fields(soup)
                 self.set_field(payload, fields, "convenio", convenio)
