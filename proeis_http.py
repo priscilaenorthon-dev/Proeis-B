@@ -276,12 +276,6 @@ class ProeisHTTP:
             pass
 
     def navigate_to_service_page(self) -> None:
-        # Tenta acesso direto primeiro — economiza 2-3 requisicoes por marcacao
-        soup = self.request("GET", ASSOCIAR_URL)
-        if self.has_service_fields(soup):
-            print("Tela de associar voluntario encontrada.")
-            return
-        # Fallback: navegacao pelo menu
         soup = self.request("GET", MENU_URL)
         if soup.select_one("#btnEscala") or "btnEscala" in str(soup):
             soup = self.postback("btnEscala")
