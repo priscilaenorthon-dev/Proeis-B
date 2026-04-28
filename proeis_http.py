@@ -211,9 +211,7 @@ class ProeisHTTP:
         soup = self.post_form(payload, DEFAULT_URL)
 
         for attempt in range(1, 7):
-            captcha = self.extract_captcha_image(soup)
-            captcha_text = self.solve_captcha(captcha)
-
+            soup, captcha_text = self.solve_page_captcha(soup)
             payload = self.form_payload(soup)
             payload.update(
                 {
@@ -266,6 +264,36 @@ class ProeisHTTP:
                 if "resposta invalida" not in last_error or attempt == attempts:
                     raise
                 print(f"2captcha retornou resposta fora do padrao; reenviando captcha ({attempt}/{attempts}).")
+        raise AutomationError(last_error or "2captcha nao retornou uma resposta valida.")
+
+    def solve_page_captcha(self, soup: BeautifulSoup, refresh_after_invalids: int | None = None) -> tuple[BeautifulSoup, str]:
+        attempts = int(os.getenv("TWOCAPTCHA_INVALID_RETRIES", "2")) + 1
+        refresh_after_invalids = refresh_after_invalids or int(os.getenv("TWOCAPTCHA_REFRESH_AFTER_INVALIDS", "2"))
+        refresh_after_invalids = max(1, refresh_after_invalids)
+        invalid_streak = 0
+        last_error = ""
+        current_soup = soup
+
+        for attempt in range(1, attempts + 1):
+            try:
+                captcha = self.extract_captcha_image(current_soup)
+                return current_soup, self.solve_captcha_once(captcha)
+            except AutomationError as exc:
+                last_error = str(exc)
+                if "resposta invalida" not in last_error or attempt == attempts:
+                    raise
+
+                invalid_streak += 1
+                if invalid_streak >= refresh_after_invalids:
+                    refreshed = self.refresh_page_captcha(current_soup)
+                    if refreshed is not None:
+                        current_soup = refreshed
+                        invalid_streak = 0
+                        print("Captcha ruim repetido; gerando nova imagem no PROEIS.")
+                        continue
+
+                print(f"2captcha retornou resposta fora do padrao; reenviando captcha ({attempt}/{attempts}).")
+
         raise AutomationError(last_error or "2captcha nao retornou uma resposta valida.")
 
     def solve_captcha_once(self, image: bytes) -> str:
@@ -331,6 +359,45 @@ class ProeisHTTP:
             )
         except requests.RequestException:
             pass
+
+    def refresh_page_captcha(self, soup: BeautifulSoup) -> BeautifulSoup | None:
+        control = soup.select_one("#lnkNewCaptcha, [name=lnkNewCaptcha]")
+        if not control:
+            for candidate in soup.select("a[href], input[type=submit][name], button[name]"):
+                text = norm(
+                    " ".join(
+                        [
+                            candidate.get_text(" ", strip=True),
+                            candidate.get("value", ""),
+                            candidate.get("id", ""),
+                            candidate.get("name", ""),
+                            candidate.get("href", ""),
+                        ]
+                    )
+                )
+                if "gerar nova imagem" in text or "newcaptcha" in text:
+                    control = candidate
+                    break
+        if not control:
+            print("Nao encontrei controle para gerar nova imagem de captcha; mantendo a imagem atual.")
+            return None
+
+        payload = self.form_payload(soup)
+        name = control.get("name") or control.get("id")
+        href = control.get("href", "")
+        postback = re.search(r"__doPostBack\('([^']+)','([^']*)'\)", href)
+        if postback:
+            payload["__EVENTTARGET"] = postback.group(1)
+            payload["__EVENTARGUMENT"] = postback.group(2)
+        elif name:
+            payload["__EVENTTARGET"] = name
+            payload["__EVENTARGUMENT"] = ""
+            if control.name in {"input", "button"} and control.get("name"):
+                payload[control.get("name")] = control.get("value", "")
+        else:
+            return None
+
+        return self.post_form(payload)
 
     def navigate_to_service_page(self) -> None:
         soup = self.request("GET", MENU_URL)
@@ -654,8 +721,16 @@ class ProeisHTTP:
         captcha_field = self.find_captcha_field(soup)
         if not captcha_field:
             return
-        captcha = self.extract_captcha_image(soup)
-        payload[captcha_field] = self.solve_captcha(captcha)
+        original_payload = payload.copy()
+        final_soup, captcha_text = self.solve_page_captcha(soup)
+        if final_soup is not soup:
+            payload.clear()
+            payload.update(self.form_payload(final_soup))
+            for name, value in original_payload.items():
+                if not name.startswith("__"):
+                    payload[name] = value
+            captcha_field = self.find_captcha_field(final_soup) or captcha_field
+        payload[captcha_field] = captcha_text
 
     def find_captcha_field(self, soup: BeautifulSoup) -> str | None:
         for control in soup.select("input[name]"):

@@ -8,7 +8,6 @@ echo   PROEIS - Verificador e Instalador de Dependencias
 echo ============================================================
 echo.
 
-:: ── 1. Verifica Python ──────────────────────────────────────
 set PYTHON_CMD=python
 
 %PYTHON_CMD% --version >nul 2>&1
@@ -19,7 +18,7 @@ py --version >nul 2>&1
 if not errorlevel 1 goto python_ok
 
 echo [!] Python nao encontrado no sistema.
-echo     Baixando Python 3.12 (pode levar alguns minutos)...
+echo     Baixando Python 3.12.3. Isso pode levar alguns minutos...
 echo.
 
 curl -L --progress-bar -o "%TEMP%\python_setup.exe" "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe"
@@ -27,18 +26,17 @@ curl -L --progress-bar -o "%TEMP%\python_setup.exe" "https://www.python.org/ftp/
 if errorlevel 1 (
     echo.
     echo [ERRO] Falha ao baixar Python automaticamente.
-    echo        Acesse https://www.python.org/downloads/ e instale manualmente.
+    echo        Instale manualmente em https://www.python.org/downloads/
     echo        Depois execute este arquivo novamente.
     pause
     exit /b 1
 )
 
 echo.
-echo [!] Instalando Python 3.12...
+echo [!] Instalando Python 3.12.3...
 "%TEMP%\python_setup.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
 del "%TEMP%\python_setup.exe" >nul 2>&1
 
-:: Tenta atualizar PATH da sessao atual via registro
 for /f "tokens=2*" %%a in ('reg query "HKCU\Environment" /v PATH 2^>nul') do (
     set "PATH=%%b;!PATH!"
 )
@@ -50,7 +48,7 @@ if errorlevel 1 (
     py --version >nul 2>&1
     if errorlevel 1 (
         echo.
-        echo [OK] Python instalado com sucesso!
+        echo [OK] Python instalado.
         echo [!] Feche esta janela e abra o instalar.bat novamente para continuar.
         pause
         exit /b 0
@@ -60,49 +58,49 @@ if errorlevel 1 (
 :python_ok
 for /f "tokens=*" %%v in ('%PYTHON_CMD% --version 2^>^&1') do echo [OK] %%v encontrado.
 
-:: ── 2. Garante pip atualizado ───────────────────────────────
 echo.
 echo [..] Verificando pip...
 %PYTHON_CMD% -m pip --version >nul 2>&1
 if errorlevel 1 (
     echo [!] Instalando pip...
-    %PYTHON_CMD% -m ensurepip --upgrade >nul 2>&1
+    %PYTHON_CMD% -m ensurepip --upgrade
+    if errorlevel 1 (
+        echo [ERRO] Falha ao instalar pip.
+        pause
+        exit /b 1
+    )
 )
-%PYTHON_CMD% -m pip install --upgrade pip --quiet
-echo [OK] pip atualizado.
 
-:: ── 3. Verifica e instala requests ─────────────────────────
 echo.
-%PYTHON_CMD% -c "import requests" >nul 2>&1
+echo [..] Atualizando pip...
+%PYTHON_CMD% -m pip install --upgrade pip --quiet
+
+echo.
+echo [..] Instalando dependencias do requirements.txt...
+%PYTHON_CMD% -m pip install -r requirements.txt
 if errorlevel 1 (
-    echo [!] Instalando requests...
-    %PYTHON_CMD% -m pip install requests
+    echo.
+    echo [!] Falha usando o PyPI padrao. Tentando espelho alternativo...
+    %PYTHON_CMD% -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
     if errorlevel 1 (
-        echo [ERRO] Falha ao instalar requests. Verifique sua conexao.
+        echo.
+        echo [ERRO] Nao foi possivel instalar as dependencias.
+        echo        Verifique sua conexao, proxy ou permissao de rede.
         pause
         exit /b 1
     )
-    echo [OK] requests instalado.
-) else (
-    echo [OK] requests ja esta instalado.
 )
 
-:: ── 4. Verifica e instala beautifulsoup4 ───────────────────
-%PYTHON_CMD% -c "import bs4" >nul 2>&1
+echo.
+echo [..] Validando instalacao...
+%PYTHON_CMD% -c "import requests, bs4, truststore; print('Dependencias OK')"
 if errorlevel 1 (
-    echo [!] Instalando beautifulsoup4...
-    %PYTHON_CMD% -m pip install beautifulsoup4
-    if errorlevel 1 (
-        echo [ERRO] Falha ao instalar beautifulsoup4. Verifique sua conexao.
-        pause
-        exit /b 1
-    )
-    echo [OK] beautifulsoup4 instalado.
-) else (
-    echo [OK] beautifulsoup4 ja esta instalado.
+    echo.
+    echo [ERRO] Dependencias instaladas, mas a validacao falhou.
+    pause
+    exit /b 1
 )
 
-:: ── 5. Verificacao final ────────────────────────────────────
 echo.
 echo ============================================================
 echo   Tudo instalado e pronto!
