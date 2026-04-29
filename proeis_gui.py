@@ -195,7 +195,7 @@ class ProeisApp:
         ttk.Label(outer, text="PROEIS — Automacao Local", style="Header.TLabel").pack(anchor="w")
         ttk.Label(
             outer,
-            text="Configure os filtros e clique em Testar para listar vagas, ou Marcar para confirmar a inscricao.",
+            text="Configure os filtros e clique em Consultar Filtros para listar vagas, ou Marcar para confirmar a inscricao.",
             style="Sub.TLabel",
         ).pack(anchor="w", pady=(3, 16))
 
@@ -278,7 +278,7 @@ class ProeisApp:
         btn_frame.columnconfigure((0, 1), weight=1)
         r += 1
 
-        ttk.Button(btn_frame, text="Testar", style="Primary.TButton", command=self.run_test).grid(
+        ttk.Button(btn_frame, text="Consultar Filtros", style="Primary.TButton", command=self.run_test).grid(
             row=0, column=0, sticky="ew", padx=(0, 5)
         )
         ttk.Button(btn_frame, text="Marcar", style="Success.TButton", command=self.run_real).grid(
@@ -290,7 +290,7 @@ class ProeisApp:
         r += 1
         ttk.Label(
             form,
-            text="Testar: usa os filtros atuais    Listar Vagas: varre todas as datas",
+            text="Consultar Filtros: usa os filtros atuais    Listar Vagas: varre todas as datas",
             style="Hint.TLabel",
         ).grid(row=r, column=0, sticky="w", pady=(6, 0))
         r += 1
@@ -540,6 +540,11 @@ class ProeisApp:
         self.write_log(f"Quantidade:  {settings['quantidade']}\n")
         mode = "Listar vagas (todas as datas)" if list_all_dates else ("Teste (sem confirmar)" if dry_run else "MARCACAO REAL")
         self.write_log(f"Modo:        {mode}\n\n")
+        if not dry_run and not list_all_dates and settings["quantidade"] > 1:
+            self.write_log(
+                "Observacao: apos confirmar uma vaga, o bot avanca para a proxima data,\n"
+                "pois o CPROEIS pode ocultar os demais servicos do mesmo dia.\n\n"
+            )
         if scheduled and not settings["data_evento"]:
             self.write_log("Agendamento sem data: varredura em 2 rodadas.\n\n")
 

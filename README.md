@@ -61,7 +61,7 @@ Se `python` nao estiver no PATH, o arquivo tenta usar `py`.
 
 | Botao | Funcao |
 |---|---|
-| Testar | Consulta vagas com os filtros atuais sem clicar em Eu Vou |
+| Consultar Filtros | Consulta vagas com os filtros atuais sem clicar em Eu Vou |
 | Marcar | Tenta marcar vagas clicando em Eu Vou |
 | Listar Vagas | Varre as datas disponiveis do convenio/CPA e mostra tudo encontrado |
 | Cancelar | Interrompe a execucao atual |
@@ -95,10 +95,14 @@ Quando `Agendar execucao automatica` estiver marcado:
 Com Data do Evento vazia, a logica de varredura e:
 
 - Consulta as datas em ordem.
-- Se encontrar vaga em uma data, clica e consulta a mesma data novamente.
-- So avanca para a proxima data quando nao houver mais vaga compativel naquela data.
+- Como o CPROEIS deixa exibir/marcar apenas um servico por dia, apos confirmar uma vaga o bot avanca para a proxima data.
+- Se nao houver vaga compativel na data atual, tambem avanca para a proxima data.
 - Se chegar ao fim das datas sem completar a quantidade, faz uma segunda varredura desde o inicio.
 - Se ainda assim nao completar, para com a quantidade que conseguiu marcar e registra no log.
+
+Essa regra vale somente para `Marcar` e `Agendar execucao automatica`. `Consultar Filtros` e `Listar Vagas` continuam apenas consultando/listando as vagas encontradas.
+
+Se `Data do Evento` estiver preenchida e `Quantidade` for maior que 1, essa data sera usada como data inicial: depois da primeira marcacao confirmada, o bot procura as proximas vagas em datas posteriores.
 
 ## Logs e tempo
 
